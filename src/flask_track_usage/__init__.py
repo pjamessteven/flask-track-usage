@@ -56,7 +56,7 @@ class TrackUsage(object):
     Tracks basic usage of Flask applications.
     """
 
-    def __init__(self, app=None, storage=None, _fake_time=None):
+    def __init__(self, app=None, storage=None, ip_lookup_func=None, _fake_time=None):
         """
         Create the instance.
 
@@ -78,9 +78,9 @@ class TrackUsage(object):
         self._fake_time = _fake_time
 
         if app is not None and storage is not None:
-            self.init_app(app, storage)
+            self.init_app(app, storage, ip_lookup_func)
 
-    def init_app(self, app, storage):
+    def init_app(self, app, storage, ip_lookup_func):
         """
         Initialize the instance with the app.
 
@@ -90,6 +90,7 @@ class TrackUsage(object):
         """
         self.app = app
         self._storages = storage
+        self.ip_lookup_func = ip_lookup_func
         self._use_freegeoip = app.config.get(
             'TRACK_USAGE_USE_FREEGEOIP', False)
         self._freegeoip_endpoint = app.config.get(
@@ -190,7 +191,10 @@ class TrackUsage(object):
             data['username'] = str(ctx.request.authorization.username)
         elif getattr(self.app, 'login_manager', None) and current_user and not current_user.is_anonymous:
             data['username'] = str(current_user)
-        if self._use_freegeoip:
+        if self.ip_lookup_func:
+            clean_ip = quote_plus(str(ctx.request.remote_addr))
+            data['ip_info'] = self.ip_lookup_func(clean_ip)
+        elif self._use_freegeoip:
             clean_ip = quote_plus(str(ctx.request.remote_addr))
             if '{ip}' in self._freegeoip_endpoint:
                 url = self._freegeoip_endpoint.format(ip=clean_ip)
