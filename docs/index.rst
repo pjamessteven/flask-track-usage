@@ -14,6 +14,7 @@ Basic metrics tracking for your `Flask`_ application. The core of library is ver
 The following is optional:
 
 * `freegeoip.net <http://freegeoip.net/>`_ integration for storing geography of the visitor.
+* Alternatively you can define a custom geolocation function, for use with the geoip2 package for example.
 * Unique visitor tracking if you are wanting to use Flask's cookie storage.
 * Summation hooks for live count of common web analysis statistics such as hit counts.
 
@@ -55,6 +56,8 @@ Usage
     app.config['TRACK_USAGE_USE_FREEGEOIP'] = False
     # You can use a different instance of freegeoip like so
     # app.config['TRACK_USAGE_FREEGEOIP_ENDPOINT'] = 'https://example.org/api/'
+    # (You can also define a custom geolocation function when initializing the extension)
+
     app.config['TRACK_USAGE_INCLUDE_OR_EXCLUDE_VIEWS'] = 'include'
 
     # We will just print out the data for the example
@@ -68,7 +71,9 @@ Usage
     t = TrackUsage(app, [
         PrintWriter(),
         OutputWriter(transform=lambda s: "OUTPUT: " + str(s))
-    ])
+        ],
+        custom_geolocation_function # (Optional)
+    )
 
     # Include the view in the metrics
     @t.include
@@ -156,7 +161,8 @@ TRACK_USAGE_USE_FREEGEOIP
 
 **Default**: False
 
-Turn FreeGeoIP integration on or off. If set to true, then geography information is also stored in the usage logs.
+Turn FreeGeoIP integration on or off. If set to true, then the geography information is also stored in the usage logs.
+Alternatively you can define a custom geolocation lookup function when initializing the extension.
 
 .. versionchanged:: 1.1.
    The default server for using geoip integration changed to extreme-ip-lookup.com
