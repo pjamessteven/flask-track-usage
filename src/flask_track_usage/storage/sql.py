@@ -79,6 +79,7 @@ class SQLStorage(Storage):
         """
 
         import sqlalchemy as sql
+        from sqlalchemy.dialects import postgresql
         if db:
             self._eng = db.engine
             self._metadata = db.metadata
@@ -104,9 +105,10 @@ class SQLStorage(Storage):
                     sql.Column('view_args', sql.String(64)),
                     sql.Column('status', sql.Integer),
                     sql.Column('remote_addr', sql.String(24)),
+                    sql.Column('country', sql.String(64)),
                     sql.Column('xforwardedfor', sql.String(24)),
                     sql.Column('authorization', sql.Boolean),
-                    sql.Column('ip_info', sql.String(1024)),
+                    sql.Column('ip_info', postgresql.JSONB),
                     sql.Column('path', sql.String(128)),
                     sql.Column('speed', sql.Float),
                     sql.Column('datetime', sql.DateTime),
@@ -131,16 +133,7 @@ class SQLStorage(Storage):
         """
         user_agent = data["user_agent"]
         utcdatetime = datetime.datetime.fromtimestamp(data['date'])
-        if data["ip_info"]:
-            t = {}
-            for key in data["ip_info"]:
-                t[key] = data["ip_info"][key]
-                if not len(json.dumps(t)) < 1024:
-                    del t[key]
-                    break
-            ip_info_str = json.dumps(t)
-        else:
-            ip_info_str = None
+
         with self._eng.begin() as con:
             stmt = self.track_table.insert().values(
                 url=data['url'],
@@ -156,7 +149,8 @@ class SQLStorage(Storage):
                 remote_addr=data["remote_addr"],
                 xforwardedfor=data["xforwardedfor"],
                 authorization=data["authorization"],
-                ip_info=ip_info_str,
+                country=data["country"],
+                ip_info=data["ip_info"],
                 path=data["path"],
                 speed=data["speed"],
                 datetime=utcdatetime,
