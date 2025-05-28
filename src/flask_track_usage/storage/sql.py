@@ -79,7 +79,7 @@ class SQLStorage(Storage):
         """
 
         import sqlalchemy as sql
-        from sqlalchemy.dialects import postgresql
+        from sqlalchemy.dialects.postgresql import JSONB
         if db:
             self._eng = db.engine
             self._metadata = db.metadata
@@ -107,7 +107,7 @@ class SQLStorage(Storage):
                     sql.Column('remote_addr', sql.String(24)),
                     sql.Column('xforwardedfor', sql.String(24)),
                     sql.Column('authorization', sql.Boolean),
-                    sql.Column('ip_info', postgresql.JSONB),
+                    sql.Column('ip_info', JSONB()),
                     sql.Column('path', sql.String(128)),
                     sql.Column('speed', sql.Float),
                     sql.Column('datetime', sql.DateTime),
@@ -119,7 +119,10 @@ class SQLStorage(Storage):
             else:
                 self._metadata.reflect(bind=self._eng)
                 self.track_table = self._metadata.tables[table_name]
-
+                 # Patch the ip_info column type after reflection
+                if 'ip_info' in self.track_table.c:
+                    self.track_table.c.ip_info.type = JSONB()
+                    
     def store(self, data):
         """
         Executed on "function call".
